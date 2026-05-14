@@ -45,7 +45,6 @@ class TagCreate(TagBase):
 class TagUpdate(SQLModel):
     name: Optional[str] = None
 
-
 class Tag(TagBase, table=True):
     __tablename__: str = "portfolio_tag"
 

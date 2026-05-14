@@ -1,5 +1,8 @@
 import os
+from typing import Annotated
+
 from dotenv import load_dotenv
+from fastapi.params import Depends
 from sqlmodel import SQLModel, Session, create_engine
 
 load_dotenv()
@@ -17,3 +20,5 @@ def create_db_and_tables():
 def get_session():
     with Session(engine) as session:
         yield session
+
+SessionDep = Annotated[Session, Depends(get_session)]
