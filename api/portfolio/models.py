@@ -106,7 +106,7 @@ class Project(ProjectBase, table=True):
     project_type: ProjectType = Relationship(back_populates="projects")
     difficulty_level: DifficultyLevel = Relationship(back_populates="projects")
     translations: List["ProjectTranslation"] = Relationship(back_populates="project", cascade_delete=True)
-    tags: List[Tag] = Relationship(back_populates="tags", link_model=ProjectTag)
+    tags: List[Tag] = Relationship(back_populates="projects", link_model=ProjectTag)
 
 class ProjectTranslationBase(SQLModel):
     title: str = Field(min_length=2)
