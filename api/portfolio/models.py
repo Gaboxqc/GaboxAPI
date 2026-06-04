@@ -1,8 +1,12 @@
 from enum import Enum
 from typing import Annotated, Optional, List
-
 from pydantic import StringConstraints
 from sqlmodel import SQLModel, Field, Relationship
+
+
+# ==========================================
+# 1. AUXILIARY MODELS & CONFIG
+# ==========================================
 
 class ProjectTypeBase(SQLModel):
     name: str = Field(unique=True, index=True, min_length=1)
@@ -12,8 +16,10 @@ class ProjectType(ProjectTypeBase, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     projects: List["Project"] = Relationship(back_populates="project_type")
 
+
 class DifficultyLevelBase(SQLModel):
     name: str = Field(unique=True, index=True, min_length=1)
+
 
 class DifficultyLevel(DifficultyLevelBase, table=True):
     __tablename__: str = "portfolio_difficulty_level"
@@ -26,27 +32,35 @@ class CategoryBase(SQLModel):
 class Category(CategoryBase, table=True):
     __tablename__: str = "portfolio_category"
     id: Optional[int] = Field(default=None, primary_key=True)
-    certificates: List["Certificate"] = Relationship(back_populates="category_rel")
+    certificates: List["Certificate"] = Relationship(back_populates="category")
 
 class LanguageBase(SQLModel):
     code: str = Field(primary_key=True, min_length=2, max_length=2)
     name: str = Field(unique=True, min_length=2)
 
+
 class Language(LanguageBase, table=True):
     __tablename__: str = "portfolio_language"
     project_translations: List["ProjectTranslation"] = Relationship(back_populates="language")
 
+# ==========================================
+# 2. MANY-TO-MANY LINK MODELS
+# ==========================================
+
 class ProjectTag(SQLModel, table=True):
     __tablename__: str = "portfolio_project_tag"
+    project_id: int = Field(foreign_key="portfolio_project.id", ondelete="CASCADE", primary_key=True)
+    tag_id: int = Field(foreign_key="portfolio_tag.id", ondelete="CASCADE", primary_key=True)
 
-    project_id: int = Field(foreign_key="portfolio_project.id", primary_key=True)
-    tag_id: int = Field(foreign_key="portfolio_tag.id", primary_key=True)
 
 class CertificateTag(SQLModel, table=True):
     __tablename__: str = "portfolio_certificate_tag"
+    certificate_id: int = Field(foreign_key="portfolio_certificate.id", ondelete="CASCADE", primary_key=True)
+    tag_id: int = Field(foreign_key="portfolio_tag.id", ondelete="CASCADE", primary_key=True)
 
-    certificate_id: int = Field(foreign_key="portfolio_certificate.id", primary_key=True)
-    tag_id: int = Field(foreign_key="portfolio_tag.id", primary_key=True)
+# ==========================================
+# 3. TAG MODELS
+# ==========================================
 
 class TagBase(SQLModel):
     name: str = Field(unique=True, index=True, min_length=1)
@@ -59,11 +73,13 @@ class TagUpdate(SQLModel):
 
 class Tag(TagBase, table=True):
     __tablename__: str = "portfolio_tag"
-
     id: Optional[int] = Field(default=None, primary_key=True)
-
     projects: List["Project"] = Relationship(back_populates="tags", link_model=ProjectTag)
     certificates: List["Certificate"] = Relationship(back_populates="tags", link_model=CertificateTag)
+
+# ==========================================
+# 4. PROJECT & TRANSLATION MODELS
+# ==========================================
 
 class ProjectBase(SQLModel):
     year: int = Field(index=True)
@@ -86,21 +102,18 @@ class ProjectUpdate(SQLModel):
 
 class Project(ProjectBase, table=True):
     __tablename__: str = "portfolio_project"
-
     id: Optional[int] = Field(default=None, primary_key=True)
     project_type: ProjectType = Relationship(back_populates="projects")
     difficulty_level: DifficultyLevel = Relationship(back_populates="projects")
     translations: List["ProjectTranslation"] = Relationship(back_populates="project", cascade_delete=True)
-    tags: List[Tag] = Relationship(back_populates="projects", link_model=ProjectTag)
-
+    tags: List[Tag] = Relationship(back_populates="tags", link_model=ProjectTag)
 
 class ProjectTranslationBase(SQLModel):
     title: str = Field(min_length=2)
     description: str = Field(min_length=10)
-    language_code: str = Field(foreign_key="portfolio_language.code", primary_key=True)
-    project_id: int = Field(foreign_key="portfolio_project.id", primary_key=True)
 
 class ProjectTranslationCreate(ProjectTranslationBase):
+    language_code: str
     project_id: int
 
 class ProjectTranslationUpdate(SQLModel):
@@ -109,9 +122,14 @@ class ProjectTranslationUpdate(SQLModel):
 
 class ProjectTranslation(ProjectTranslationBase, table=True):
     __tablename__: str = "portfolio_project_translation"
-    project_id: int = Field(foreign_key="portfolio_project.id", ondelete="CASCADE")
+    language_code: str = Field(foreign_key="portfolio_language.code", ondelete="CASCADE", primary_key=True)
+    project_id: int = Field(foreign_key="portfolio_project.id", ondelete="CASCADE", primary_key=True)
     project: Project = Relationship(back_populates="translations")
     language: Language = Relationship(back_populates="project_translations")
+
+# ==========================================
+# 5. ACADEMY & CERTIFICATE MODELS
+# ==========================================
 
 class AcademyBase(SQLModel):
     name: str = Field(min_length=2, index=True)
@@ -119,14 +137,12 @@ class AcademyBase(SQLModel):
 class AcademyCreate(AcademyBase):
     pass
 
-class AcademyUpdate(AcademyBase):
-    pass
+class AcademyUpdate(SQLModel):
+    name: Optional[str] = None
 
 class Academy(AcademyBase, table=True):
     __tablename__: str = "portfolio_academy"
-
     id: Optional[int] = Field(default=None, primary_key=True)
-
     certificates: List["Certificate"] = Relationship(back_populates="academy")
 
 class CertificateBase(SQLModel):
@@ -150,13 +166,11 @@ class CertificateUpdate(SQLModel):
     isMain: Optional[bool] = None
     isVerified: Optional[bool] = None
     academy_id: Optional[int] = None
-    category: Optional[int] = None
+    category_id: Optional[int] = None  # CORREGIDO: Se cambió 'category' por 'category_id' para mantener consistencia
 
 class Certificate(CertificateBase, table=True):
     __tablename__: str = "portfolio_certificate"
-
     id: Optional[int] = Field(default=None, primary_key=True)
-
     academy: Academy = Relationship(back_populates="certificates")
     tags: List[Tag] = Relationship(back_populates="certificates", link_model=CertificateTag)
     category: Category = Relationship(back_populates="certificates")
