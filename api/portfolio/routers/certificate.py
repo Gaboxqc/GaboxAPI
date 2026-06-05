@@ -1,9 +1,9 @@
-from typing import List
-from fastapi import APIRouter, status, HTTPException
+from typing import List, Optional
+from fastapi import APIRouter, status, HTTPException, Query
 from sqlmodel import select
 
 from api.database import SessionDep
-from api.portfolio.models import Certificate, CertificateCreate, CertificateUpdate
+from api.portfolio.models import Certificate, CertificateCreate, CertificateUpdate, CertificateTag
 
 router = APIRouter()
 
@@ -26,6 +26,31 @@ async def get_certificate(certificate_id: int, db: SessionDep):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail=f"Certificate with id {certificate_id} not found")
     return certificate
+
+@router.get("/certificate_by", response_model=List[Certificate])
+async def get_certificate_by(
+        db: SessionDep,
+        category_id: Optional[int] = Query(None, description="Filtrar por ID de Categoría"),
+        tag_id: Optional[int] = Query(None, description="Filtrar por ID de Tag (Lenguaje/Framework)"),
+        is_main: Optional[bool] = Query(None, description="True para mostrar solo las principales"),
+):
+    query = select(Certificate)
+
+    if category_id:
+        query = query.where(Certificate.category_id == category_id)
+
+    if is_main is not None:
+        query = query.where(Certificate.isMain == is_main)
+
+    if tag_id:
+        query = (
+            query
+            .join(CertificateTag)
+            .where(CertificateTag.tag_id == tag_id)
+        )
+
+    results = db.exec(query).all()
+    return results
 
 @router.patch("/certificate/{certificate_id}", response_model=Certificate)
 async def update_certificate(certificate_id: int, certificate_data: CertificateUpdate, db: SessionDep):

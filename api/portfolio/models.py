@@ -3,7 +3,6 @@ from typing import Annotated, Optional, List
 from pydantic import StringConstraints
 from sqlmodel import SQLModel, Field, Relationship
 
-
 # ==========================================
 # 1. AUXILIARY MODELS & CONFIG
 # ==========================================
@@ -16,10 +15,8 @@ class ProjectType(ProjectTypeBase, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     projects: List["Project"] = Relationship(back_populates="project_type")
 
-
 class DifficultyLevelBase(SQLModel):
     name: str = Field(unique=True, index=True, min_length=1)
-
 
 class DifficultyLevel(DifficultyLevelBase, table=True):
     __tablename__: str = "portfolio_difficulty_level"
@@ -37,7 +34,6 @@ class Category(CategoryBase, table=True):
 class LanguageBase(SQLModel):
     code: str = Field(primary_key=True, min_length=2, max_length=2)
     name: str = Field(unique=True, min_length=2)
-
 
 class Language(LanguageBase, table=True):
     __tablename__: str = "portfolio_language"

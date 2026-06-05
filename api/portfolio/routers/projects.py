@@ -1,9 +1,9 @@
-from typing import List
-from fastapi import APIRouter, status, HTTPException
-from sqlmodel import select
+from typing import List, Optional
+from fastapi import APIRouter, status, HTTPException, Query
+from sqlmodel import select, col
 
 from api.database import SessionDep
-from api.portfolio.models import Project, ProjectCreate, ProjectUpdate
+from api.portfolio.models import Project, ProjectCreate, ProjectUpdate, ProjectTranslation, ProjectTag
 
 router = APIRouter()
 
@@ -25,6 +25,42 @@ async def get_project(project_id: int, db: SessionDep):
     if not project:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Project with id {project_id} not found")
     return project
+
+
+@router.get("/projects_by", tags=["Projects"])
+def get_projects(
+        db: SessionDep,
+        search: Optional[str] = Query(None, description="Buscar por título del proyecto"),
+        project_type_id: Optional[int] = Query(None, description="Filtrar por Tipo de Proyecto"),
+        difficulty_id: Optional[int] = Query(None, description="Filtrar por Nivel de Dificultad"),
+        tag_id: Optional[int] = Query(None, description="Filtrar por ID de Tecnología (Tag)"),
+):
+    query = select(Project)
+
+    if search:
+        query = (
+            query
+            .join(ProjectTranslation)
+            .where(col(ProjectTranslation.title).ilike(f"%{search}%"))
+        )
+
+    if project_type_id:
+        query = query.where(Project.project_type_id == project_type_id)
+
+    if difficulty_id:
+        query = query.where(Project.difficulty_id == difficulty_id)
+
+    if tag_id:
+        query = (
+            query
+            .join(ProjectTag)
+            .where(ProjectTag.tag_id == tag_id)
+        )
+
+    query = query.distinct()
+
+    results = db.exec(query).all()
+    return results
 
 @router.patch("/project/{project_id}", response_model=Project)
 async def update_project(project_id: int, project_data: ProjectUpdate, db: SessionDep):
