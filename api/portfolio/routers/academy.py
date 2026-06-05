@@ -1,13 +1,15 @@
 from typing import List
-from fastapi import APIRouter, status, HTTPException
+from fastapi import APIRouter, status, HTTPException, Depends
 from sqlmodel import select
+
+from api.security import validate_api_key
 
 from api.database import SessionDep
 from api.portfolio.models import Academy, AcademyCreate, AcademyUpdate
 
 router = APIRouter()
 
-@router.post("/academy", status_code=status.HTTP_201_CREATED)
+@router.post("/academy", status_code=status.HTTP_201_CREATED, dependencies=[Depends(validate_api_key)])
 async def create_academy(academy_data: AcademyCreate, db: SessionDep):
     new_academy = Academy.model_validate(academy_data.model_dump())
     db.add(new_academy)
@@ -26,7 +28,7 @@ async def get_academy(academy_id: int, db: SessionDep):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Academy with id {academy_id} not found")
     return academy
 
-@router.patch("/academy/{academy_id}", response_model=Academy)
+@router.patch("/academy/{academy_id}", response_model=Academy, dependencies=[Depends(validate_api_key)])
 async def update_academy(academy_id: int, academy_data: AcademyUpdate, db: SessionDep):
     academy = db.get(Academy, academy_id)
     if not academy:
@@ -39,7 +41,7 @@ async def update_academy(academy_id: int, academy_data: AcademyUpdate, db: Sessi
     db.refresh(academy)
     return academy
 
-@router.delete("/academy/{academy_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/academy/{academy_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(validate_api_key)])
 async def delete_academy(academy_id: int, db: SessionDep):
     academy = db.get(Academy, academy_id)
     if not academy:

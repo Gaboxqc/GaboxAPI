@@ -19,7 +19,8 @@ app = FastAPI(
 # In production, replace "*" with your specific frontend domains for security
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["http://localhost:8000",
+                   "https://gabrielmayorga.dev"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
