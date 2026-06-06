@@ -1,13 +1,14 @@
 from typing import List, Optional
-from fastapi import APIRouter, status, HTTPException, Query
+from fastapi import APIRouter, status, HTTPException, Query, Depends
 from sqlmodel import select
 
 from api.database import SessionDep
 from api.portfolio.models import Certificate, CertificateCreate, CertificateUpdate, CertificateTag
+from api.security import validate_api_key
 
 router = APIRouter()
 
-@router.post("/certificate", status_code=status.HTTP_201_CREATED)
+@router.post("/certificate", status_code=status.HTTP_201_CREATED, dependencies=[Depends(validate_api_key)])
 async def create_certificate(certificate_data: CertificateCreate, db: SessionDep):
     new_certificate = Certificate.model_validate(certificate_data.model_dump())
     db.add(new_certificate)
@@ -52,7 +53,7 @@ async def get_certificate_by(
     results = db.exec(query).all()
     return results
 
-@router.patch("/certificate/{certificate_id}", response_model=Certificate)
+@router.patch("/certificate/{certificate_id}", response_model=Certificate, dependencies=[Depends(validate_api_key)])
 async def update_certificate(certificate_id: int, certificate_data: CertificateUpdate, db: SessionDep):
     certificate = db.get(Certificate, certificate_id)
     if not certificate:
@@ -67,7 +68,7 @@ async def update_certificate(certificate_id: int, certificate_data: CertificateU
     db.refresh(certificate)
     return certificate
 
-@router.delete("/certificate/{certificate_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/certificate/{certificate_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(validate_api_key)])
 async def delete_certificate(certificate_id: int, db: SessionDep):
     certificate = db.get(Certificate, certificate_id)
     if not certificate:

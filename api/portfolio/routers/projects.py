@@ -1,13 +1,14 @@
 from typing import List, Optional
-from fastapi import APIRouter, status, HTTPException, Query
+from fastapi import APIRouter, status, HTTPException, Query, Depends
 from sqlmodel import select, col
 
 from api.database import SessionDep
 from api.portfolio.models import Project, ProjectCreate, ProjectUpdate, ProjectTranslation, ProjectTag
+from api.security import validate_api_key
 
 router = APIRouter()
 
-@router.post("/project", response_model=Project, status_code=status.HTTP_201_CREATED)
+@router.post("/project", response_model=Project, status_code=status.HTTP_201_CREATED, dependencies=[Depends(validate_api_key)])
 async def create_project(project_data: ProjectCreate, db: SessionDep):
     new_project = Project.model_validate(project_data.model_dump())
     db.add(new_project)
@@ -62,7 +63,7 @@ def get_projects(
     results = db.exec(query).all()
     return results
 
-@router.patch("/project/{project_id}", response_model=Project)
+@router.patch("/project/{project_id}", response_model=Project, dependencies=[Depends(validate_api_key)])
 async def update_project(project_id: int, project_data: ProjectUpdate, db: SessionDep):
     project = db.get(Project, project_id)
     if not project:
@@ -75,7 +76,7 @@ async def update_project(project_id: int, project_data: ProjectUpdate, db: Sessi
     db.refresh(project)
     return project
 
-@router.delete("/project/{project_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/project/{project_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(validate_api_key)])
 async def delete_project(project_id: int, db: SessionDep):
     project = db.get(Project, project_id)
     if not project:

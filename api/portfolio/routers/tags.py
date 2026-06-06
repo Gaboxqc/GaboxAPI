@@ -1,13 +1,14 @@
 from typing import List
-from fastapi import APIRouter, status, HTTPException
+from fastapi import APIRouter, status, HTTPException, Depends
 from sqlmodel import select
 
 from api.database import SessionDep
 from api.portfolio.models import Tag, TagCreate, TagUpdate
+from api.security import validate_api_key
 
 router = APIRouter()
 
-@router.post("/tag", response_model=Tag, status_code=status.HTTP_201_CREATED)
+@router.post("/tag", response_model=Tag, status_code=status.HTTP_201_CREATED, dependencies=[Depends(validate_api_key)])
 async def create_tag(tag_data: TagCreate, db: SessionDep):
     new_tag = Tag.model_validate(tag_data.model_dump())
     db.add(new_tag)
@@ -26,7 +27,7 @@ async def get_tag(tag_id: int, db: SessionDep):
         raise HTTPException(status_code=404, detail="Tag no found")
     return tag
 
-@router.patch("/tag/{tag_id}", response_model=Tag)
+@router.patch("/tag/{tag_id}", response_model=Tag, dependencies=[Depends(validate_api_key)])
 async def update_tag(tag_id: int, tag_data: TagUpdate, db: SessionDep):
     tag = db.get(Tag, tag_id)
     if not tag:
@@ -39,7 +40,7 @@ async def update_tag(tag_id: int, tag_data: TagUpdate, db: SessionDep):
     db.refresh(tag)
     return tag
 
-@router.delete("/tag/{tag_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/tag/{tag_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(validate_api_key)])
 async def delete_tag(tag_id: int, db: SessionDep):
     tag = db.get(Tag, tag_id)
     if not tag:
