@@ -1,12 +1,13 @@
 from typing import List, Optional
 from fastapi import APIRouter, status, HTTPException, Query, Depends
+from sqlalchemy.orm import selectinload
 from sqlmodel import select
 
 from api.database import SessionDep
-from api.portfolio.models import Certification, CertificationCreate, CertificationUpdate
+from api.portfolio.models import Certification, CertificationCreate, CertificationUpdate, CertificationReadComplete, Tag
 from api.security import validate_api_key
 
-router = APIRouter(tags=["Certifications"])
+router = APIRouter()
 
 
 @router.post("/certification", status_code=status.HTTP_201_CREATED, dependencies=[Depends(validate_api_key)])
@@ -32,22 +33,37 @@ async def get_certification(certification_id: int, db: SessionDep):
     return certification
 
 
-@router.get("/certification_by", response_model=List[Certification])
-async def get_certifications_by(
+@router.get("/certifications_by", response_model=List[CertificationReadComplete])
+def get_certifications(
         db: SessionDep,
+        year: Optional[int] = Query(None, description="Filtrar por Año de emisión"),
+        academy_id: Optional[int] = Query(None, description="Filtrar por ID de Academia"),
         category_id: Optional[int] = Query(None, description="Filtrar por ID de Categoría"),
-        academy_id: Optional[int] = Query(None, description="Filtrar por ID de Academia/Emisor"),
+        tag_id: Optional[int] = Query(None, description="Filtrar por ID de Tecnología (Tag)"), # 👈 NEW
 ):
     query = select(Certification)
 
-    if category_id:
-        query = query.where(Certification.category_id == category_id)
+    if year:
+        query = query.where(Certification.year == year)
 
     if academy_id:
         query = query.where(Certification.academy_id == academy_id)
 
-    results = db.exec(query).all()
-    return results
+    if category_id:
+        query = query.where(Certification.category_id == category_id)
+
+    if tag_id:
+        query = query.where(Certification.tags.any(Tag.id == tag_id))
+
+    # --- 2. EAGER LOADING ---
+    query = query.options(
+        selectinload(Certification.academy),
+        selectinload(Certification.category),
+        selectinload(Certification.translations),
+        selectinload(Certification.tags)
+    )
+
+    return db.exec(query).all()
 
 
 @router.patch("/certification/{certification_id}", response_model=Certification,

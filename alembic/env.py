@@ -7,8 +7,8 @@ from sqlalchemy import pool
 from alembic import context
 
 from api.database import SQLModel
-# ProjectType, DifficultyLevel, Category, Language, Project, ProjectTranslation, Certificate
-from api.portfolio.models import *
+#
+from api.portfolio.models import ProjectType, DifficultyLevel, Category, Language, Project, ProjectTranslation, Certification, Course
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

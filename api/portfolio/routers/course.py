@@ -1,9 +1,10 @@
 from typing import List, Optional
 from fastapi import APIRouter, status, HTTPException, Query, Depends
+from sqlalchemy.orm import joinedload, selectinload
 from sqlmodel import select
 
 from api.database import SessionDep
-from api.portfolio.models import Course, CourseCreate, CourseUpdate, CourseTag
+from api.portfolio.models import Course, CourseCreate, CourseUpdate, CourseTag, CourseReadComplete
 from api.security import validate_api_key
 
 router = APIRouter()
@@ -32,11 +33,13 @@ async def get_course(course_id: int, db: SessionDep):
     return course
 
 
-@router.get("/course_by", response_model=List[Course])
+@router.get("/course_by", response_model=List[CourseReadComplete])
 async def get_courses_by(
         db: SessionDep,
         category_id: Optional[int] = Query(None, description="Filtrar por ID de Categoría"),
         tag_id: Optional[int] = Query(None, description="Filtrar por ID de Tag (Lenguaje/Framework)"),
+        offset: int = 0,
+        limit: int = Query(default=10)
 ):
     query = select(Course)
 
@@ -44,13 +47,16 @@ async def get_courses_by(
         query = query.where(Course.category_id == category_id)
 
     if tag_id:
-        query = (
-            query
-            .join(CourseTag)
-            .where(CourseTag.tag_id == tag_id)
-        )
+        query = query.join(CourseTag).where(CourseTag.tag_id == tag_id)
 
-    results = db.exec(query).all()
+    query = query.options(
+        joinedload(Course.academy),
+        joinedload(Course.category),
+        selectinload(Course.tags),
+        selectinload(Course.translations)
+    )
+
+    results = db.exec(query.offset(offset).limit(limit)).all()
     return results
 
 

@@ -1,9 +1,11 @@
 from typing import List, Optional
 from fastapi import APIRouter, status, HTTPException, Query, Depends
-from sqlmodel import select, col
+from sqlalchemy.orm import selectinload
+from sqlmodel import select
 
 from api.database import SessionDep
-from api.portfolio.models import Project, ProjectCreate, ProjectUpdate, ProjectTranslation, ProjectTag
+from api.portfolio.models import Project, ProjectCreate, ProjectUpdate, ProjectTranslation, ProjectTag, Tag, \
+    ProjectReadComplete
 from api.security import validate_api_key
 
 router = APIRouter()
@@ -28,7 +30,7 @@ async def get_project(project_id: int, db: SessionDep):
     return project
 
 
-@router.get("/projects_by", tags=["Projects"])
+@router.get("/projects_by", response_model=List[ProjectReadComplete])
 def get_projects(
         db: SessionDep,
         search: Optional[str] = Query(None, description="Buscar por título del proyecto"),
@@ -38,11 +40,10 @@ def get_projects(
 ):
     query = select(Project)
 
+    # --- 1. FILTERING ---
     if search:
-        query = (
-            query
-            .join(ProjectTranslation)
-            .where(col(ProjectTranslation.title).ilike(f"%{search}%"))
+        query = query.where(
+            Project.translations.any(ProjectTranslation.title.ilike(f"%{search}%"))
         )
 
     if project_type_id:
@@ -52,16 +53,16 @@ def get_projects(
         query = query.where(Project.difficulty_id == difficulty_id)
 
     if tag_id:
-        query = (
-            query
-            .join(ProjectTag)
-            .where(ProjectTag.tag_id == tag_id)
-        )
+        query = query.where(Project.tags.any(Tag.id == tag_id))
 
-    query = query.distinct()
+    query = query.options(
+        selectinload(Project.project_type),
+        selectinload(Project.difficulty_level),
+        selectinload(Project.tags),
+        selectinload(Project.translations)
+    )
 
-    results = db.exec(query).all()
-    return results
+    return db.exec(query).all()
 
 @router.patch("/project/{project_id}", response_model=Project, dependencies=[Depends(validate_api_key)])
 async def update_project(project_id: int, project_data: ProjectUpdate, db: SessionDep):
