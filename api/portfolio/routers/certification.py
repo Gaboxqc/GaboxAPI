@@ -39,7 +39,9 @@ def get_certifications(
         year: Optional[int] = Query(None, description="Filtrar por Año de emisión"),
         academy_id: Optional[int] = Query(None, description="Filtrar por ID de Academia"),
         category_id: Optional[int] = Query(None, description="Filtrar por ID de Categoría"),
-        tag_id: Optional[int] = Query(None, description="Filtrar por ID de Tecnología (Tag)"), # 👈 NEW
+        tag_id: Optional[int] = Query(None, description="Filtrar por ID de Tecnología (Tag)"),
+        offset: int = 0,
+        limit: int = Query(default=10)
 ):
     query = select(Certification)
 
@@ -55,7 +57,6 @@ def get_certifications(
     if tag_id:
         query = query.where(Certification.tags.any(Tag.id == tag_id))
 
-    # --- 2. EAGER LOADING ---
     query = query.options(
         selectinload(Certification.academy),
         selectinload(Certification.category),
@@ -63,7 +64,7 @@ def get_certifications(
         selectinload(Certification.tags)
     )
 
-    return db.exec(query).all()
+    return db.exec(query.offset(offset).limit(limit)).all()
 
 
 @router.patch("/certification/{certification_id}", response_model=Certification,

@@ -40,7 +40,6 @@ def get_projects(
 ):
     query = select(Project)
 
-    # --- 1. FILTERING ---
     if search:
         query = query.where(
             Project.translations.any(ProjectTranslation.title.ilike(f"%{search}%"))
