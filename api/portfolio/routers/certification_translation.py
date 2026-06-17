@@ -10,7 +10,7 @@ from api.security import validate_api_key
 router = APIRouter()
 
 
-@router.post("/certification_translation", status_code=status.HTTP_201_CREATED,
+@router.post("/certification_translations", status_code=status.HTTP_201_CREATED,
              dependencies=[Depends(validate_api_key)])
 async def create_certification_translation(translation_data: CertificationTranslationCreate, db: SessionDep):
     existing = db.exec(
@@ -30,12 +30,12 @@ async def create_certification_translation(translation_data: CertificationTransl
     return new_translation
 
 
-@router.get("/certification_translation", response_model=List[CertificationTranslation])
+@router.get("/certification_translations", response_model=List[CertificationTranslation])
 async def list_certification_translations(db: SessionDep, offset: int = 0, limit: int = Query(default=10)):
     return db.exec(select(CertificationTranslation).offset(offset).limit(limit)).all()
 
 
-@router.get("/certification_translation/{certification_id}/{language_code}", response_model=CertificationTranslation)
+@router.get("/certification_translations/{certification_id}/{language_code}", response_model=CertificationTranslation)
 async def get_certification_translation(certification_id: int, language_code: str, db: SessionDep):
     translation = db.exec(
         select(CertificationTranslation).where(
@@ -49,7 +49,7 @@ async def get_certification_translation(certification_id: int, language_code: st
     return translation
 
 
-@router.patch("/certification_translation/{certification_id}/{language_code}", response_model=CertificationTranslation,
+@router.patch("/certification_translations/{certification_id}/{language_code}", response_model=CertificationTranslation,
               dependencies=[Depends(validate_api_key)])
 async def update_certification_translation(certification_id: int, language_code: str,
                                            translation_data: CertificationTranslationUpdate, db: SessionDep):
@@ -73,7 +73,7 @@ async def update_certification_translation(certification_id: int, language_code:
     return translation
 
 
-@router.delete("/certification_translation/{certification_id}/{language_code}", status_code=status.HTTP_204_NO_CONTENT,
+@router.delete("/certification_translations/{certification_id}/{language_code}", status_code=status.HTTP_204_NO_CONTENT,
                dependencies=[Depends(validate_api_key)])
 async def delete_certification_translation(certification_id: int, language_code: str, db: SessionDep):
     translation = db.exec(

@@ -8,7 +8,7 @@ from api.security import validate_api_key
 
 router = APIRouter()
 
-@router.post("/project-translation", response_model=ProjectTranslation, dependencies=[Depends(validate_api_key)])
+@router.post("/project_translations", response_model=ProjectTranslation, dependencies=[Depends(validate_api_key)])
 async def create_project_translation(project_translation_data: ProjectTranslationCreate, db: SessionDep):
     new_project_translation = ProjectTranslation.model_validate(project_translation_data.model_dump())
     db.add(new_project_translation)
@@ -16,11 +16,11 @@ async def create_project_translation(project_translation_data: ProjectTranslatio
     db.refresh(new_project_translation)
     return new_project_translation
 
-@router.get("/project-translation", response_model=List[ProjectTranslation])
+@router.get("/project_translations", response_model=List[ProjectTranslation])
 async def list_project_translation(db: SessionDep):
     return db.exec(select(ProjectTranslation)).all()
 
-@router.get("/project_translation/{project_translation_id}", response_model=ProjectTranslation)
+@router.get("/project_translations/{project_translation_id}", response_model=ProjectTranslation)
 async def get_project_translation(project_translation_id: int, db:SessionDep):
     project_translation = db.get(ProjectTranslation, project_translation_id)
     if not project_translation:
@@ -28,7 +28,7 @@ async def get_project_translation(project_translation_id: int, db:SessionDep):
                             detail=f"Project Translation with id {project_translation_id} not found")
     return project_translation
 
-@router.patch("/project_translation/{project_translation_id}", response_model=ProjectTranslation, dependencies=[Depends(validate_api_key)])
+@router.patch("/project_translations/{project_translation_id}", response_model=ProjectTranslation, dependencies=[Depends(validate_api_key)])
 async def update_project_translation(project_translation_id: int, project_translation_data: ProjectTranslationUpdate,
                                      db: SessionDep):
     project_translation = db.get(ProjectTranslation, project_translation_id)
@@ -43,7 +43,7 @@ async def update_project_translation(project_translation_id: int, project_transl
     db.refresh(project_translation)
     return project_translation
 
-@router.delete("/project_translation/{project_translation_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(validate_api_key)])
+@router.delete("/project_translations/{project_translation_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(validate_api_key)])
 async def delete_project_translation(project_translation_id: int, db: SessionDep):
     project_translation = db.get(ProjectTranslation, project_translation_id)
     if not project_translation:

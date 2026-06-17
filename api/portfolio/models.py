@@ -241,6 +241,7 @@ class CertificationTranslation(CertificationTranslationBase, table=True):
 # --- Core Entity: Project ---
 class ProjectBaseFlat(SQLModel):
     year: int = Field(index=True)
+    is_main: bool = Field(default=False, index=True)
     image_url: Optional[str] = None
     git_url: Optional[str] = None
     deploy_url: Optional[str] = None
@@ -257,6 +258,7 @@ class ProjectCreate(ProjectBase):
 
 class ProjectUpdate(SQLModel):
     year: Optional[int] = None
+    is_main: Optional[bool] = None
     project_type_id: Optional[int] = None
     difficulty_level_id: Optional[int] = None
     image_url: Optional[str] = None

@@ -9,7 +9,7 @@ from api.security import validate_api_key
 router = APIRouter()
 
 
-@router.post("/course_translation", status_code=status.HTTP_201_CREATED, dependencies=[Depends(validate_api_key)])
+@router.post("/course_translations", status_code=status.HTTP_201_CREATED, dependencies=[Depends(validate_api_key)])
 async def create_course_translation(translation_data: CourseTranslationCreate, db: SessionDep):
     existing = db.exec(
         select(CourseTranslation).where(
@@ -28,12 +28,12 @@ async def create_course_translation(translation_data: CourseTranslationCreate, d
     return new_translation
 
 
-@router.get("/course_translation", response_model=List[CourseTranslation])
+@router.get("/course_translations", response_model=List[CourseTranslation])
 async def list_course_translations(db: SessionDep, offset: int = 0, limit: int = Query(default=10)):
     return db.exec(select(CourseTranslation).offset(offset).limit(limit)).all()
 
 
-@router.get("/course_translation/{course_id}/{language_code}", response_model=CourseTranslation)
+@router.get("/course_translations/{course_id}/{language_code}", response_model=CourseTranslation)
 async def get_course_translation(course_id: int, language_code: str, db: SessionDep):
     translation = db.exec(
         select(CourseTranslation).where(
@@ -47,7 +47,7 @@ async def get_course_translation(course_id: int, language_code: str, db: Session
     return translation
 
 
-@router.patch("/course_translation/{course_id}/{language_code}", response_model=CourseTranslation,
+@router.patch("/course_translations/{course_id}/{language_code}", response_model=CourseTranslation,
               dependencies=[Depends(validate_api_key)])
 async def update_course_translation(course_id: int, language_code: str, translation_data: CourseTranslationUpdate,
                                     db: SessionDep):

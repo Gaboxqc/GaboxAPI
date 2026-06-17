@@ -11,7 +11,7 @@ from api.security import validate_api_key
 router = APIRouter()
 
 
-@router.post("/project", response_model=Project, status_code=status.HTTP_201_CREATED,
+@router.post("/projects", response_model=Project, status_code=status.HTTP_201_CREATED,
              dependencies=[Depends(validate_api_key)])
 async def create_project(project_data: ProjectCreate, db: SessionDep):
     new_project = Project.model_validate(project_data.model_dump())
@@ -21,7 +21,7 @@ async def create_project(project_data: ProjectCreate, db: SessionDep):
     return new_project
 
 
-@router.get("/project/{project_id}", response_model=Project)
+@router.get("/projects/{project_id}", response_model=Project)
 async def get_project(project_id: int, db: SessionDep):
     project = db.get(Project, project_id)
     if not project:
@@ -32,12 +32,18 @@ async def get_project(project_id: int, db: SessionDep):
 @router.get("/projects", response_model=List[ProjectReadComplete])
 def get_projects(
         db: SessionDep,
+        is_main: Optional[bool] = Query(None, description="Filtrar solo proyectos destacados"),
         search: Optional[str] = Query(None, description="Buscar por título del proyecto"),
-        project_type_id: Optional[int] = Query(None, description="Filtrar por Tipo de Proyecto"),
-        difficulty_level_id: Optional[int] = Query(None, description="Filtrar por Nivel de Dificultad"),
-        tag_id: Optional[int] = Query(None, description="Filtrar por ID de Tecnología (Tag)"),
+        project_type_id: List[int] = Query(default=[], description="Filtrar por Tipo de Proyecto"),
+        difficulty_level_id: List[int] = Query(default=[], description="Filtrar por Nivel de Dificultad"),
+        tag_id: List[int] = Query(default=[], description="Filtrar por ID de Tecnología (Tag)"),
+        offset: int = 0,
+        limit: int = Query(default=10, le=100),
 ):
     query = select(Project)
+
+    if is_main is not None:
+        query = query.where(Project.is_main == is_main)
 
     if search:
         query = query.where(
@@ -45,13 +51,13 @@ def get_projects(
         )
 
     if project_type_id:
-        query = query.where(Project.project_type_id == project_type_id)
+        query = query.where(Project.project_type_id.in_(project_type_id))
 
     if difficulty_level_id:
-        query = query.where(Project.difficulty_level_id == difficulty_level_id)
+        query = query.where(Project.difficulty_level_id.in_(difficulty_level_id))
 
     if tag_id:
-        query = query.where(Project.tags.any(Tag.id == tag_id))
+        query = query.where(Project.tags.any(Tag.id.in_(tag_id)))
 
     query = query.options(
         selectinload(Project.project_type),
@@ -60,10 +66,10 @@ def get_projects(
         selectinload(Project.translations)
     )
 
-    return db.exec(query).all()
+    return db.exec(query.offset(offset).limit(limit)).all()
 
 
-@router.patch("/project/{project_id}", response_model=Project, dependencies=[Depends(validate_api_key)])
+@router.patch("/projects/{project_id}", response_model=Project, dependencies=[Depends(validate_api_key)])
 async def update_project(project_id: int, project_data: ProjectUpdate, db: SessionDep):
     project = db.get(Project, project_id)
     if not project:
@@ -77,7 +83,7 @@ async def update_project(project_id: int, project_data: ProjectUpdate, db: Sessi
     return project
 
 
-@router.delete("/project/{project_id}", status_code=status.HTTP_204_NO_CONTENT,
+@router.delete("/projects/{project_id}", status_code=status.HTTP_204_NO_CONTENT,
                dependencies=[Depends(validate_api_key)])
 async def delete_project(project_id: int, db: SessionDep):
     project = db.get(Project, project_id)

@@ -10,7 +10,7 @@ from api.security import validate_api_key
 router = APIRouter()
 
 
-@router.post("/language", response_model=Language, status_code=status.HTTP_201_CREATED,
+@router.post("/languages", response_model=Language, status_code=status.HTTP_201_CREATED,
              dependencies=[Depends(validate_api_key)])
 async def create_language(language_data: LanguageBase, db: SessionDep):
     existing = db.get(Language, language_data.code)
@@ -24,12 +24,12 @@ async def create_language(language_data: LanguageBase, db: SessionDep):
     return new_language
 
 
-@router.get("/language", response_model=List[Language])
+@router.get("/languages", response_model=List[Language])
 async def list_languages(db: SessionDep, offset: int = 0, limit: int = Query(default=10)):
     return db.exec(select(Language)).all()
 
 
-@router.delete("/language/{code}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(validate_api_key)])
+@router.delete("/languages/{code}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(validate_api_key)])
 async def delete_language(code: str, db: SessionDep):
     language = db.get(Language, code)
     if not language:

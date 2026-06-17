@@ -10,7 +10,7 @@ from api.security import validate_api_key
 router = APIRouter()
 
 
-@router.post("/certification", status_code=status.HTTP_201_CREATED, dependencies=[Depends(validate_api_key)])
+@router.post("/certifications", status_code=status.HTTP_201_CREATED, dependencies=[Depends(validate_api_key)])
 async def create_certification(certification_data: CertificationCreate, db: SessionDep):
     new_certification = Certification.model_validate(certification_data.model_dump())
     db.add(new_certification)
@@ -19,7 +19,7 @@ async def create_certification(certification_data: CertificationCreate, db: Sess
     return new_certification
 
 
-@router.get("/certification/{certification_id}", response_model=Certification)
+@router.get("/certifications/{certification_id}", response_model=Certification)
 async def get_certification(certification_id: int, db: SessionDep):
     certification = db.get(Certification, certification_id)
     if not certification:
@@ -62,7 +62,7 @@ def get_certifications(
     return db.exec(query.offset(offset).limit(limit)).all()
 
 
-@router.patch("/certification/{certification_id}", response_model=Certification,
+@router.patch("/certifications/{certification_id}", response_model=Certification,
               dependencies=[Depends(validate_api_key)])
 async def update_certification(certification_id: int, certification_data: CertificationUpdate, db: SessionDep):
     certification = db.get(Certification, certification_id)
@@ -80,7 +80,7 @@ async def update_certification(certification_id: int, certification_data: Certif
     return certification
 
 
-@router.delete("/certification/{certification_id}", status_code=status.HTTP_204_NO_CONTENT,
+@router.delete("/certifications/{certification_id}", status_code=status.HTTP_204_NO_CONTENT,
                dependencies=[Depends(validate_api_key)])
 async def delete_certification(certification_id: int, db: SessionDep):
     certification = db.get(Certification, certification_id)
