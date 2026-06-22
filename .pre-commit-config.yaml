@@ -1,0 +1,10 @@
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.18
+    hooks:
+      # Linter — fixes auto-fixable issues, then blocks on remaining ones
+      - id: ruff
+        args: [--fix, --exit-non-zero-on-fix]
+
+      # Formatter — formats the file (like Black)
+      - id: ruff-format

@@ -1,6 +1,4 @@
-from typing import Optional, List
-from sqlmodel import SQLModel, Field, Relationship
-
+from sqlmodel import Field, Relationship, SQLModel
 
 # ==============================================================================
 # ARCHITECTURE NOTE:
@@ -14,9 +12,12 @@ from sqlmodel import SQLModel, Field, Relationship
 # LAYER 1: MANY-TO-MANY LINK MODELS
 # ==============================================================================
 
+
 class ProjectTag(SQLModel, table=True):
     __tablename__: str = "portfolio_project_tag"
-    project_id: int = Field(foreign_key="portfolio_project.id", ondelete="CASCADE", primary_key=True)
+    project_id: int = Field(
+        foreign_key="portfolio_project.id", ondelete="CASCADE", primary_key=True
+    )
     tag_id: int = Field(foreign_key="portfolio_tag.id", ondelete="CASCADE", primary_key=True)
 
 
@@ -28,7 +29,9 @@ class CourseTag(SQLModel, table=True):
 
 class CertificationTag(SQLModel, table=True):
     __tablename__: str = "portfolio_certification_tag"
-    certification_id: int = Field(foreign_key="portfolio_certification.id", ondelete="CASCADE", primary_key=True)
+    certification_id: int = Field(
+        foreign_key="portfolio_certification.id", ondelete="CASCADE", primary_key=True
+    )
     tag_id: int = Field(foreign_key="portfolio_tag.id", ondelete="CASCADE", primary_key=True)
 
 
@@ -37,11 +40,15 @@ class CertificationTag(SQLModel, table=True):
 # ==============================================================================
 
 # ProjectType, DifficultyLevel, Category are seeded values —
-# managed via migrations, not the API. No Create/Update schemas needed.
+
 
 # --- Project Type ---
 class ProjectTypeBase(SQLModel):
     name: str = Field(unique=True, index=True, min_length=1)
+
+
+class ProjectTypeCreate(ProjectTypeBase):
+    pass
 
 
 class ProjectTypeRead(ProjectTypeBase):
@@ -50,13 +57,17 @@ class ProjectTypeRead(ProjectTypeBase):
 
 class ProjectType(ProjectTypeBase, table=True):
     __tablename__: str = "portfolio_project_type"
-    id: Optional[int] = Field(default=None, primary_key=True)
-    projects: List["Project"] = Relationship(back_populates="project_type")
+    id: int | None = Field(default=None, primary_key=True)
+    projects: list["Project"] = Relationship(back_populates="project_type")
 
 
 # --- Difficulty Level ---
 class DifficultyLevelBase(SQLModel):
     name: str = Field(unique=True, index=True, min_length=1)
+
+
+class DifficultyLevelCreate(DifficultyLevelBase):
+    pass
 
 
 class DifficultyLevelRead(DifficultyLevelBase):
@@ -65,13 +76,17 @@ class DifficultyLevelRead(DifficultyLevelBase):
 
 class DifficultyLevel(DifficultyLevelBase, table=True):
     __tablename__: str = "portfolio_difficulty_level"
-    id: Optional[int] = Field(default=None, primary_key=True)
-    projects: List["Project"] = Relationship(back_populates="difficulty_level")
+    id: int | None = Field(default=None, primary_key=True)
+    projects: list["Project"] = Relationship(back_populates="difficulty_level")
 
 
 # --- Category ---
 class CategoryBase(SQLModel):
     name: str = Field(unique=True, index=True, min_length=1)
+
+
+class CategoryCreate(CategoryBase):
+    pass
 
 
 class CategoryRead(CategoryBase):
@@ -80,9 +95,9 @@ class CategoryRead(CategoryBase):
 
 class Category(CategoryBase, table=True):
     __tablename__: str = "portfolio_category"
-    id: Optional[int] = Field(default=None, primary_key=True)
-    courses: List["Course"] = Relationship(back_populates="category")
-    certifications: List["Certification"] = Relationship(back_populates="category")
+    id: int | None = Field(default=None, primary_key=True)
+    courses: list["Course"] = Relationship(back_populates="category")
+    certifications: list["Certification"] = Relationship(back_populates="category")
 
 
 # --- Language ---
@@ -91,15 +106,21 @@ class LanguageBase(SQLModel):
     name: str = Field(unique=True, min_length=2)
 
 
+class LanguageCreate(LanguageBase):
+    pass
+
+
 class LanguageRead(LanguageBase):
     pass
 
 
 class Language(LanguageBase, table=True):
     __tablename__: str = "portfolio_language"
-    project_translations: List["ProjectTranslation"] = Relationship(back_populates="language")
-    course_translations: List["CourseTranslation"] = Relationship(back_populates="language")
-    certification_translations: List["CertificationTranslation"] = Relationship(back_populates="language")
+    project_translations: list["ProjectTranslation"] = Relationship(back_populates="language")
+    course_translations: list["CourseTranslation"] = Relationship(back_populates="language")
+    certification_translations: list["CertificationTranslation"] = Relationship(
+        back_populates="language"
+    )
 
 
 # --- Academy ---
@@ -112,7 +133,7 @@ class AcademyCreate(AcademyBase):
 
 
 class AcademyUpdate(SQLModel):
-    name: Optional[str] = None
+    name: str | None = None
 
 
 class AcademyRead(AcademyBase):
@@ -121,9 +142,9 @@ class AcademyRead(AcademyBase):
 
 class Academy(AcademyBase, table=True):
     __tablename__: str = "portfolio_academy"
-    id: Optional[int] = Field(default=None, primary_key=True)
-    courses: List["Course"] = Relationship(back_populates="academy")
-    certifications: List["Certification"] = Relationship(back_populates="academy")
+    id: int | None = Field(default=None, primary_key=True)
+    courses: list["Course"] = Relationship(back_populates="academy")
+    certifications: list["Certification"] = Relationship(back_populates="academy")
 
 
 # --- Tag ---
@@ -136,7 +157,7 @@ class TagCreate(TagBase):
 
 
 class TagUpdate(SQLModel):
-    name: Optional[str] = None
+    name: str | None = None
 
 
 class TagRead(TagBase):
@@ -145,15 +166,18 @@ class TagRead(TagBase):
 
 class Tag(TagBase, table=True):
     __tablename__: str = "portfolio_tag"
-    id: Optional[int] = Field(default=None, primary_key=True)
-    projects: List["Project"] = Relationship(back_populates="tags", link_model=ProjectTag)
-    courses: List["Course"] = Relationship(back_populates="tags", link_model=CourseTag)
-    certifications: List["Certification"] = Relationship(back_populates="tags", link_model=CertificationTag)
+    id: int | None = Field(default=None, primary_key=True)
+    projects: list["Project"] = Relationship(back_populates="tags", link_model=ProjectTag)
+    courses: list["Course"] = Relationship(back_populates="tags", link_model=CourseTag)
+    certifications: list["Certification"] = Relationship(
+        back_populates="tags", link_model=CertificationTag
+    )
 
 
 # ==============================================================================
 # LAYER 3: TRANSLATION MODELS
 # ==============================================================================
+
 
 # --- Project Translation ---
 class ProjectTranslationBase(SQLModel):
@@ -162,12 +186,12 @@ class ProjectTranslationBase(SQLModel):
 
 
 class ProjectTranslationCreate(ProjectTranslationBase):
-    pass
+    language_code: str
 
 
 class ProjectTranslationUpdate(SQLModel):
-    title: Optional[str] = None
-    description: Optional[str] = None
+    title: str | None = None
+    description: str | None = None
 
 
 class ProjectTranslationRead(ProjectTranslationBase):
@@ -176,8 +200,12 @@ class ProjectTranslationRead(ProjectTranslationBase):
 
 class ProjectTranslation(ProjectTranslationBase, table=True):
     __tablename__: str = "portfolio_project_translation"
-    language_code: str = Field(foreign_key="portfolio_language.code", ondelete="RESTRICT", primary_key=True)
-    project_id: int = Field(foreign_key="portfolio_project.id", ondelete="CASCADE", primary_key=True)
+    language_code: str = Field(
+        foreign_key="portfolio_language.code", ondelete="RESTRICT", primary_key=True
+    )
+    project_id: int = Field(
+        foreign_key="portfolio_project.id", ondelete="CASCADE", primary_key=True
+    )
     project: "Project" = Relationship(back_populates="translations")
     language: Language = Relationship(back_populates="project_translations")
 
@@ -189,11 +217,10 @@ class CourseTranslationBase(SQLModel):
 
 class CourseTranslationCreate(CourseTranslationBase):
     language_code: str
-    course_id: int
 
 
 class CourseTranslationUpdate(SQLModel):
-    title: Optional[str] = None
+    title: str | None = None
 
 
 class CourseTranslationRead(CourseTranslationBase):
@@ -202,7 +229,9 @@ class CourseTranslationRead(CourseTranslationBase):
 
 class CourseTranslation(CourseTranslationBase, table=True):
     __tablename__: str = "portfolio_course_translation"
-    language_code: str = Field(foreign_key="portfolio_language.code", ondelete="RESTRICT", primary_key=True)
+    language_code: str = Field(
+        foreign_key="portfolio_language.code", ondelete="RESTRICT", primary_key=True
+    )
     course_id: int = Field(foreign_key="portfolio_course.id", ondelete="CASCADE", primary_key=True)
     course: "Course" = Relationship(back_populates="translations")
     language: Language = Relationship(back_populates="course_translations")
@@ -215,11 +244,10 @@ class CertificationTranslationBase(SQLModel):
 
 class CertificationTranslationCreate(CertificationTranslationBase):
     language_code: str
-    certification_id: int
 
 
 class CertificationTranslationUpdate(SQLModel):
-    title: Optional[str] = None
+    title: str | None = None
 
 
 class CertificationTranslationRead(CertificationTranslationBase):
@@ -228,8 +256,12 @@ class CertificationTranslationRead(CertificationTranslationBase):
 
 class CertificationTranslation(CertificationTranslationBase, table=True):
     __tablename__: str = "portfolio_certification_translation"
-    language_code: str = Field(foreign_key="portfolio_language.code", ondelete="RESTRICT", primary_key=True)
-    certification_id: int = Field(foreign_key="portfolio_certification.id", ondelete="CASCADE", primary_key=True)
+    language_code: str = Field(
+        foreign_key="portfolio_language.code", ondelete="RESTRICT", primary_key=True
+    )
+    certification_id: int = Field(
+        foreign_key="portfolio_certification.id", ondelete="CASCADE", primary_key=True
+    )
     certification: "Certification" = Relationship(back_populates="translations")
     language: Language = Relationship(back_populates="certification_translations")
 
@@ -238,13 +270,14 @@ class CertificationTranslation(CertificationTranslationBase, table=True):
 # LAYER 4: CORE ENTITIES & COMPLETE READ SCHEMAS
 # ==============================================================================
 
+
 # --- Core Entity: Project ---
 class ProjectBaseFlat(SQLModel):
     year: int = Field(index=True)
     is_main: bool = Field(default=False, index=True)
-    image_url: Optional[str] = None
-    git_url: Optional[str] = None
-    deploy_url: Optional[str] = None
+    image_url: str | None = None
+    git_url: str | None = None
+    deploy_url: str | None = None
 
 
 class ProjectBase(ProjectBaseFlat):
@@ -257,36 +290,38 @@ class ProjectCreate(ProjectBase):
 
 
 class ProjectUpdate(SQLModel):
-    year: Optional[int] = None
-    is_main: Optional[bool] = None
-    project_type_id: Optional[int] = None
-    difficulty_level_id: Optional[int] = None
-    image_url: Optional[str] = None
-    git_url: Optional[str] = None
-    deploy_url: Optional[str] = None
+    year: int | None = None
+    is_main: bool | None = None
+    project_type_id: int | None = None
+    difficulty_level_id: int | None = None
+    image_url: str | None = None
+    git_url: str | None = None
+    deploy_url: str | None = None
 
 
 class Project(ProjectBase, table=True):
     __tablename__: str = "portfolio_project"
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     project_type: ProjectType = Relationship(back_populates="projects")
     difficulty_level: DifficultyLevel = Relationship(back_populates="projects")
-    translations: List[ProjectTranslation] = Relationship(back_populates="project", cascade_delete=True)
-    tags: List[Tag] = Relationship(back_populates="projects", link_model=ProjectTag)
+    translations: list[ProjectTranslation] = Relationship(
+        back_populates="project", cascade_delete=True
+    )
+    tags: list[Tag] = Relationship(back_populates="projects", link_model=ProjectTag)
 
 
 class ProjectReadComplete(ProjectBaseFlat):
     id: int
-    project_type: Optional[ProjectTypeRead] = None
-    difficulty_level: Optional[DifficultyLevelRead] = None
-    tags: List[TagRead] = []
-    translations: List[ProjectTranslationRead] = []
+    project_type: ProjectTypeRead | None = None
+    difficulty_level: DifficultyLevelRead | None = None
+    tags: list[TagRead] = []
+    translations: list[ProjectTranslationRead] = []
 
 
 # --- Core Entity: Course ---
 class CourseBaseFlat(SQLModel):
     year: int
-    url: Optional[str] = None
+    url: str | None = None
 
 
 class CourseBase(CourseBaseFlat):
@@ -299,10 +334,10 @@ class CourseCreate(CourseBase):
 
 
 class CourseUpdate(SQLModel):
-    year: Optional[int] = None
-    url: Optional[str] = None
-    academy_id: Optional[int] = None
-    category_id: Optional[int] = None
+    year: int | None = None
+    url: str | None = None
+    academy_id: int | None = None
+    category_id: int | None = None
 
 
 class CourseRead(CourseBase):
@@ -311,26 +346,28 @@ class CourseRead(CourseBase):
 
 class Course(CourseBase, table=True):
     __tablename__: str = "portfolio_course"
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     academy: Academy = Relationship(back_populates="courses")
-    tags: List[Tag] = Relationship(back_populates="courses", link_model=CourseTag)
+    tags: list[Tag] = Relationship(back_populates="courses", link_model=CourseTag)
     category: Category = Relationship(back_populates="courses")
-    translations: List[CourseTranslation] = Relationship(back_populates="course", cascade_delete=True)
+    translations: list[CourseTranslation] = Relationship(
+        back_populates="course", cascade_delete=True
+    )
 
 
 class CourseReadComplete(CourseBaseFlat):
     id: int
-    academy: Optional[AcademyRead] = None
-    category: Optional[CategoryRead] = None
-    tags: List[TagRead] = []
-    translations: List[CourseTranslationRead] = []
+    academy: AcademyRead | None = None
+    category: CategoryRead | None = None
+    tags: list[TagRead] = []
+    translations: list[CourseTranslationRead] = []
 
 
 # --- Core Entity: Certification ---
 class CertificationBaseFlat(SQLModel):
     year: int
-    validation_serial: Optional[str] = None
-    url: Optional[str] = None
+    validation_serial: str | None = None
+    url: str | None = None
 
 
 class CertificationBase(CertificationBaseFlat):
@@ -343,11 +380,11 @@ class CertificationCreate(CertificationBase):
 
 
 class CertificationUpdate(SQLModel):
-    year: Optional[int] = None
-    validation_serial: Optional[str] = None
-    url: Optional[str] = None
-    academy_id: Optional[int] = None
-    category_id: Optional[int] = None
+    year: int | None = None
+    validation_serial: str | None = None
+    url: str | None = None
+    academy_id: int | None = None
+    category_id: int | None = None
 
 
 class CertificationRead(CertificationBase):
@@ -356,16 +393,18 @@ class CertificationRead(CertificationBase):
 
 class Certification(CertificationBase, table=True):
     __tablename__: str = "portfolio_certification"
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     academy: Academy = Relationship(back_populates="certifications")
     category: Category = Relationship(back_populates="certifications")
-    translations: List[CertificationTranslation] = Relationship(back_populates="certification", cascade_delete=True)
-    tags: List[Tag] = Relationship(back_populates="certifications", link_model=CertificationTag)
+    translations: list[CertificationTranslation] = Relationship(
+        back_populates="certification", cascade_delete=True
+    )
+    tags: list[Tag] = Relationship(back_populates="certifications", link_model=CertificationTag)
 
 
 class CertificationReadComplete(CertificationBaseFlat):
     id: int
-    academy: Optional[AcademyRead] = None
-    category: Optional[CategoryRead] = None
-    tags: List[TagRead] = []
-    translations: List[CertificationTranslationRead] = []
+    academy: AcademyRead | None = None
+    category: CategoryRead | None = None
+    tags: list[TagRead] = []
+    translations: list[CertificationTranslationRead] = []
