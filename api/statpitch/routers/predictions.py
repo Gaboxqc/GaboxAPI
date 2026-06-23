@@ -1,9 +1,9 @@
 import asyncio
-from datetime import date
 import os
+from datetime import date
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
 import httpx
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlmodel import select
 
 from api.database import SessionDep
