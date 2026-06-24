@@ -1,13 +1,14 @@
 from datetime import date, datetime
+from typing import List, Optional, Literal
 
 from pydantic import BaseModel
 from sqlalchemy import UniqueConstraint
 from sqlmodel import Field, SQLModel
 
+
 # ==============================================================================
 # ML API RESPONSE SCHEMAS  (Pydantic only — never stored directly)
 # ==============================================================================
-
 
 class MLExpectedGoals(BaseModel):
     home: float
@@ -19,7 +20,7 @@ class MLTeamInfo(BaseModel):
     away_elo: float
     elo_diff: float
     h2h_games: int
-    h2h_home_wins: float  # percentage (0–100)
+    h2h_home_wins: float
 
 
 class MLMatchResult(BaseModel):
@@ -40,8 +41,6 @@ class MLBtts(BaseModel):
 
 
 class MLPredictionResponse(BaseModel):
-    """Exact shape of the JSON the ML model on Render returns."""
-
     home_team: str
     away_team: str
     expected_goals: MLExpectedGoals
@@ -56,45 +55,49 @@ class MLPredictionResponse(BaseModel):
 # REQUEST SCHEMAS
 # ==============================================================================
 
-
 class MatchPredictionCreate(SQLModel):
+    """Single match — used for manual override only."""
     home_team: str = Field(min_length=2)
     away_team: str = Field(min_length=2)
-    match_date: date | None = None
-    is_neutral: bool = True  # defaults to today
+    match_date: Optional[date] = None
+    is_neutral: bool = True
+    odds_home: Optional[float] = Field(default=None, gt=1.0)
+    odds_draw: Optional[float] = Field(default=None, gt=1.0)
+    odds_away: Optional[float] = Field(default=None, gt=1.0)
+    home_flag_url: Optional[str] = None
+    away_flag_url: Optional[str] = None
 
 
 class MatchPredictionBatchCreate(SQLModel):
-    """Send all of today's matches in a single request."""
+    """Manual batch — used when you want to override what the sync fetches."""
+    matches: List[MatchPredictionCreate]
+    match_date: Optional[date] = None
 
-    matches: list[MatchPredictionCreate]
-    match_date: date | None = None  # applied to all items that omit their own date
+
+class MatchResultUpdate(SQLModel):
+    """Posted by admin after the match ends to record the real outcome."""
+    actual_result: Literal["home_win", "draw", "away_win"]
 
 
 # ==============================================================================
 # TABLE MODEL
 # ==============================================================================
 
-
 class MatchPrediction(SQLModel, table=True):
-    """
-    One row per match. Multiple matches can share the same date (group stage
-    days have up to 4 World Cup matches). Uniqueness is enforced on the
-    combination of (match_date, home_team, away_team).
-    """
-
     __tablename__: str = "statpitch_match_prediction"
     __table_args__ = (
         UniqueConstraint("match_date", "home_team", "away_team", name="uq_match_date_teams"),
     )
 
-    id: int | None = Field(default=None, primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True)
 
     # Match identity
-    match_date: date = Field(index=True)  # no longer unique alone
+    match_date: date = Field(index=True)
     home_team: str
     away_team: str
     is_neutral: bool = Field(default=True)
+    home_flag_url: Optional[str] = Field(default=None)
+    away_flag_url: Optional[str] = Field(default=None)
     model_version: str
     predicted_at: datetime = Field(default_factory=datetime.utcnow)
 
@@ -109,7 +112,7 @@ class MatchPrediction(SQLModel, table=True):
     h2h_games: int
     h2h_home_wins: float
 
-    # Match Result
+    # Match Result probabilities (from ML model)
     home_win_prob: float
     draw_prob: float
     away_win_prob: float
@@ -123,11 +126,27 @@ class MatchPrediction(SQLModel, table=True):
     btts_yes: float
     btts_no: float
 
+    # Casino odds (fetched automatically from The Odds API)
+    odds_home: Optional[float] = Field(default=None)
+    odds_draw: Optional[float] = Field(default=None)
+    odds_away: Optional[float] = Field(default=None)
+
+    # Expected Value — computed from probabilities × odds
+    # EV > 0 means the casino is undervaluing that outcome
+    ev_home: Optional[float] = Field(default=None)
+    ev_draw: Optional[float] = Field(default=None)
+    ev_away: Optional[float] = Field(default=None)
+
+    # Best outcome to bet on (highest positive EV), None if no value found
+    best_bet: Optional[str] = Field(default=None)  # "home_win" | "draw" | "away_win" | None
+
+    # Actual result — filled in after the match ends
+    actual_result: Optional[str] = Field(default=None)
+
 
 # ==============================================================================
-# READ SCHEMA
+# READ SCHEMAS
 # ==============================================================================
-
 
 class MatchPredictionRead(SQLModel):
     id: int
@@ -135,6 +154,8 @@ class MatchPredictionRead(SQLModel):
     home_team: str
     away_team: str
     is_neutral: bool
+    home_flag_url: Optional[str]
+    away_flag_url: Optional[str]
     model_version: str
     predicted_at: datetime
     home_xg: float
@@ -152,3 +173,29 @@ class MatchPredictionRead(SQLModel):
     over_3_5: float
     btts_yes: float
     btts_no: float
+    odds_home: Optional[float]
+    odds_draw: Optional[float]
+    odds_away: Optional[float]
+    ev_home: Optional[float]
+    ev_draw: Optional[float]
+    ev_away: Optional[float]
+    best_bet: Optional[str]
+    actual_result: Optional[str]
+
+
+class DailyStatsRead(SQLModel):
+    predictions_today: int
+    high_confidence_today: int
+    high_confidence_threshold: float
+    value_bets_today: int
+    accuracy_30d: Optional[float]
+    roi_30d: Optional[float]
+    settled_matches_30d: int
+
+
+class SyncResultRead(SQLModel):
+    """Summary returned after a /sync call."""
+    synced: int           # matches successfully fetched + stored
+    skipped: int          # already cached, not overwritten
+    date: date
+    matches: List[MatchPredictionRead]
