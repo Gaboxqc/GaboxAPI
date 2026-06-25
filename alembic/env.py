@@ -6,6 +6,7 @@ from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 
 from api.database import SQLModel
+
 # Import ALL table models so Alembic can detect them
 from api.portfolio.models import (  # noqa: F401
     ProjectType,
